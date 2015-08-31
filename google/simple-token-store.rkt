@@ -7,7 +7,8 @@
          forget-google-token!
          all-google-tokens
          lookup-google-token
-         store-google-token!)
+         store-google-token!
+         replace-google-token!)
 
 (require framework/preferences)
 (require racket/serialize)
@@ -55,6 +56,15 @@
                    (hash-set (preferences:get oauth-preference-name)
                              (if (client? c) (client-id c) c)
                              (list client-name t))))
+
+(define (replace-google-token! c t)
+  (preferences:set oauth-preference-name
+                   (hash-set (preferences:get oauth-preference-name)
+                             (if (client? c) (client-id c) c)
+                             (list (car (hash-ref (preferences:get oauth-preference-name)
+                                                  (if (client? c) (client-id c) c)
+                                                  #f))
+                                   t))))
 
 (module+ main
   (require racket/pretty)

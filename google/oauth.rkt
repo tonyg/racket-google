@@ -117,21 +117,26 @@
             (+ (current-seconds) remaining-lifetime-seconds)
             token-type)]))
 
-;; Client Token -> Token
+;; Client Token -> (Option Token)
 (define (refresh-token c t)
-  (match (token-uri-operation c
-                              (list (cons 'client_id (client-id c))
-                                    (cons 'client_secret (client-secret c))
-                                    (cons 'refresh_token (token-refresh t))
-                                    (cons 'grant_type "refresh_token")))
-    [(hash-table ['access_token access-token]
-                 ['expires_in remaining-lifetime-seconds]
-                 ['token_type token-type]
-                 _ ...)
-     (token access-token
-            (token-refresh t)
-            (+ (current-seconds) remaining-lifetime-seconds)
-            token-type)]))
+  (with-handlers [((lambda (e)
+                     (and (exn:fail:google:oauth? e)
+                          (equal? (exn:fail:google:oauth-error e) "invalid_grant")))
+                   (lambda (e)
+                     #f))]
+    (match (token-uri-operation c
+                                (list (cons 'client_id (client-id c))
+                                      (cons 'client_secret (client-secret c))
+                                      (cons 'refresh_token (token-refresh t))
+                                      (cons 'grant_type "refresh_token")))
+      [(hash-table ['access_token access-token]
+                   ['expires_in remaining-lifetime-seconds]
+                   ['token_type token-type]
+                   _ ...)
+       (token access-token
+              (token-refresh t)
+              (+ (current-seconds) remaining-lifetime-seconds)
+              token-type)])))
 
 (define (token-expired? t)
   (>= (current-seconds) (token-expiry-time t)))
