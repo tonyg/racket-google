@@ -30,13 +30,15 @@
   (require racket/pretty)
   (require "../profile.rkt")
   (require "../drive.rkt")
+  (require "../calendar.rkt")
   (require "../simple-token-store.rkt")
 
   (define c (file->client "client_secret.json"))
   (define t (simple-cli-oauth-login c
                                     (list email-scope
                                           profile-scope
-                                          drive-scope)
+                                          drive-scope
+                                          calendar-scope)
                                     #:include-granted-scopes? #t))
   (store-google-token! c "Test application" t)
   (pretty-print (all-google-tokens)))
