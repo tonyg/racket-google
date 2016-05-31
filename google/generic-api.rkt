@@ -7,9 +7,15 @@
          append-optional-fields
          parse-json-response
          json-api-get
+         json-api-delete
+         json-api-post
          invalid-token-handler
          GET-string
-         GET-bytes)
+         GET-bytes
+         DELETE-string
+         DELETE-bytes
+         POST-string
+         POST-bytes)
 
 (require json)
 (require net/url)
@@ -69,6 +75,33 @@
      t
      retry-counter)))
 
+(define (json-api-delete u
+                         #:token [t #f]
+                         #:headers [headers '()])
+  (let retry ([t t]
+              [retry-counter 0])
+    (parse-json-response
+     (DELETE-string u (if t (cons (token->authorization-header t) headers) headers))
+     retry
+     t
+     retry-counter)))
+
+(struct unit ())
+
+(define (json-api-post u [b (unit)]
+                       #:token [t #f]
+                       #:headers [headers '("Content-Type: application/json")])
+  (define b* (if (unit? b)
+                 #""
+                 (jsexpr->bytes b)))
+  (let retry ([t t]
+              [retry-counter 0])
+    (parse-json-response
+     (POST-string u b* (if t (cons (token->authorization-header t) headers) headers))
+     retry
+     t
+     retry-counter)))
+
 (define invalid-token-handler (make-parameter #f))
 
 (define (GET-string u headers)
@@ -76,3 +109,15 @@
 
 (define (GET-bytes u headers)
   (port->bytes (get-pure-port u headers)))
+
+(define (DELETE-string u headers)
+  (port->string (delete-pure-port u headers)))
+
+(define (DELETE-bytes u headers)
+  (port->bytes (delete-pure-port u headers)))
+
+(define (POST-string u b headers)
+  (port->string (post-pure-port u b headers)))
+
+(define (POST-bytes u b headers)
+  (port->bytes (post-pure-port u b headers)))
